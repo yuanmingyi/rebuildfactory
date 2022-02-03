@@ -32,24 +32,24 @@ public class UserControl : MonoBehaviour
             if (Physics.Raycast(ray, out hit))
             {
                 //the collider could be children of the unit, so we make sure to check in the parent
-                var unit = hit.collider.GetComponentInParent<Unit>();
+                var unit = hit.collider.GetComponent<Unit>();
                 m_Selected = unit;
-                
-                
+
                 //check if the hit object have a IUIInfoContent to display in the UI
                 //if there is none, this will be null, so this will hid the panel if it was displayed
-                var uiInfo = hit.collider.GetComponentInParent<UIMainScene.IUIInfoContent>();
+                var uiInfo = hit.collider.GetComponent<UIMainScene.IUIInfoContent>();
                 UIMainScene.Instance.SetNewInfoContent(uiInfo);
             }
         }
         else if (m_Selected != null && Input.GetMouseButtonDown(1))
-        {//right click give order to the unit
+        {
+            //right click give order to the unit
             var ray = GameCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit))
             {
-                var building = hit.collider.GetComponentInParent<Building>();
-                
+                var building = hit.collider.GetComponent<Building>();
+
                 if (building != null)
                 {
                     m_Selected.GoTo(building);
@@ -63,7 +63,7 @@ public class UserControl : MonoBehaviour
 
         MarkerHandling();
     }
-    
+
     // Handle displaying the marker above the unit that is currently selected (or hiding it if no unit is selected)
     void MarkerHandling()
     {
@@ -77,6 +77,6 @@ public class UserControl : MonoBehaviour
             Marker.SetActive(true);
             Marker.transform.SetParent(m_Selected.transform, false);
             Marker.transform.localPosition = Vector3.zero;
-        }    
+        }
     }
 }

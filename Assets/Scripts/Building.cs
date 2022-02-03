@@ -9,6 +9,9 @@ using UnityEngine;
 public abstract class Building : MonoBehaviour,
     UIMainScene.IUIInfoContent
 {
+    [SerializeField]
+    protected GameObject[] products;
+
     //need to be serializable for the save system, so maybe added the attribute just when doing the save system
     [System.Serializable]
     public class InventoryEntry
@@ -18,25 +21,38 @@ public abstract class Building : MonoBehaviour,
     }
 
     [Tooltip("-1 is infinite")]
-    public int InventorySpace = -1;
-    
+    [SerializeField]
+    protected int inventorySpace = -1;
+
     protected List<InventoryEntry> m_Inventory = new List<InventoryEntry>();
     public List<InventoryEntry> Inventory => m_Inventory;
 
     protected int m_CurrentAmount = 0;
 
-    //return 0 if everything fit in the inventory, otherwise return the left over amount
-    public int AddItem(string resourceId, int amount)
+    public int InventorySpace { get; private set; }
+
+    protected virtual void Start()
     {
-        //as we use the shortcut -1 = infinite amount, we need to actually set it to max value for computation following
-        int maxInventorySpace = InventorySpace == -1 ? Int32.MaxValue : InventorySpace;
-        
-        if (m_CurrentAmount == maxInventorySpace)
+        InventorySpace = (inventorySpace == -1 ? Int32.MaxValue : inventorySpace);
+        UpdateProducts();
+    }
+
+    protected virtual void Update()
+    {
+
+    }
+
+    public bool IsFullFilled => InventorySpace == m_CurrentAmount;
+
+    //return 0 if everything fit in the inventory, otherwise return the left over amount
+    public virtual int AddItem(string resourceId, int amount)
+    {
+        if (m_CurrentAmount >= InventorySpace)
             return amount;
 
         int found = m_Inventory.FindIndex(item => item.ResourceId == resourceId);
-        int addedAmount = Mathf.Min(maxInventorySpace - m_CurrentAmount, amount);
-        
+        int addedAmount = Mathf.Min(InventorySpace - m_CurrentAmount, amount);
+
         //couldn't find an entry for that resource id so we add a new one.
         if (found == -1)
         {
@@ -52,11 +68,14 @@ public abstract class Building : MonoBehaviour,
         }
 
         m_CurrentAmount += addedAmount;
+
+        UpdateProducts();
+
         return amount - addedAmount;
     }
 
     //return how much was actually removed, will be 0 if couldn't get any.
-    public int GetItem(string resourceId, int requestAmount)
+    public virtual int GetItem(string resourceId, int requestAmount)
     {
         int found = m_Inventory.FindIndex(item => item.ResourceId == resourceId);
         
@@ -72,6 +91,8 @@ public abstract class Building : MonoBehaviour,
             }
 
             m_CurrentAmount -= amount;
+
+            UpdateProducts();
 
             return amount;
         }
@@ -92,5 +113,19 @@ public abstract class Building : MonoBehaviour,
     public void GetContent(ref List<InventoryEntry> content)
     {
         content.AddRange(m_Inventory);
+    }
+
+    public virtual float Distance(Vector3 pos)
+    {
+        return Vector3.Distance(transform.position, pos);
+    }
+
+    protected virtual void UpdateProducts()
+    {
+        var showProductsIndex = products.Length * m_CurrentAmount / InventorySpace;
+        for (int i = 0; i < products.Length; i++)
+        {
+            products[i].SetActive(i < showProductsIndex);
+        }
     }
 }

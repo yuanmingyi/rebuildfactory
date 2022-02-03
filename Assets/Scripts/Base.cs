@@ -8,11 +8,21 @@ using UnityEngine;
 /// to it)
 /// </summary>
 public class Base : Building
-{ 
+{
     public static Base Instance { get; private set; }
 
     private void Awake()
     {
         Instance = this;
+    }
+
+    public override float Distance(Vector3 pos)
+    {
+        return 0f;
+    }
+
+    public override string GetData()
+    {
+        return $"Products({m_CurrentAmount}/{InventorySpace})";
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 /// <summary>
@@ -10,31 +11,71 @@ public class ResourcePile : Building
 {
     public ResourceItem Item;
 
-    public float ProductionSpeed = 0.5f;
+    [SerializeField]
+    private GameObject[] resources;
 
-    private float m_CurrentProduction = 0.0f;
+    [SerializeField]
+    private float maxValue = 2000;
 
-    private void Update()
+    [SerializeField]
+    private float productionSpeed = 1;
+
+    [SerializeField]
+    private int maxWorkers = 5;
+
+    public int CurrentWorkers { get; private set; }
+
+    private float currentProductValue;
+    private float currentValue;
+    private float lastValue = 0;
+
+    protected override void Start()
     {
-        if (m_CurrentProduction > 1.0f)
-        {
-            int amountToAdd = Mathf.FloorToInt(m_CurrentProduction);
-            int leftOver = AddItem(Item.Id, amountToAdd);
+        base.Start();
+        currentValue = maxValue;
+        currentProductValue = 0;
+        CurrentWorkers = 0;
+        UpdateResources();
+    }
 
-            m_CurrentProduction = m_CurrentProduction - amountToAdd + leftOver;
-        }
-        
-        if (m_CurrentProduction < 1.0f)
+    public void Produce()
+    {
+        float productions = productionSpeed * Time.deltaTime;
+
+        if (!IsFullFilled && currentValue > 0 && productions > 0)
         {
-            m_CurrentProduction += ProductionSpeed * Time.deltaTime;
+            currentProductValue += productions;
+            currentValue -= productions;
+            int tryToAddValue = (int)Math.Floor(currentProductValue);
+            currentProductValue -= tryToAddValue - AddItem(Item.Id, tryToAddValue);
+            UpdateResources();
+            UpdateProducts();
         }
+    }
+
+    protected override void Update()
+    {
+        base.Update();
+        CurrentWorkers = (int)Math.Round((lastValue - currentValue) / (productionSpeed * Time.deltaTime));
+        lastValue = currentValue;
     }
 
     public override string GetData()
     {
-        return $"Producing at the speed of {ProductionSpeed}/s";
-        
+        var message = new StringBuilder();
+        message.AppendLine($"Remain Value: {(int)Math.Floor(currentValue)}");
+        message.AppendLine($"Preserved Product Value:  {m_CurrentAmount}");
+        message.AppendLine($"Working Staffs: {CurrentWorkers}");
+        message.AppendLine($"Production Speed: {(int)Math.Round(productionSpeed * CurrentWorkers)}/s");
+        return message.ToString();
     }
-    
-    
+
+    void UpdateResources()
+    {
+        var showResourcesIndex = resources.Length * currentValue / maxValue;
+        for (int i = 0; i < resources.Length; i++)
+        {
+            resources[i].SetActive(i < showResourcesIndex);
+        }
+    }
 }
